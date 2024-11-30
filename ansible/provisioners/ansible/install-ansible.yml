@@ -1,0 +1,6 @@
+---
+- name: Configure Ansible control nodes
+  hosts: all # all because executed by vagrant
+  gather_facts: false
+  become: true
+  tasks:
