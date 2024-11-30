@@ -1,0 +1,35 @@
+---
+- name: Configure Ansible target nodes
+  hosts: all # all because executed by vagrant
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Update repositories cache and install SSHD package
+      ansible.builtin.apt:
+        name: openssh-server
+        state: present
+        update_cache: yes
+    - name: Enable SSHD
+      ansible.builtin.service:
+        name: sshd
+        state: started
+        enabled: true
+    - name: Allow SSH from default VirtualBox gateway (host IP)
+      community.general.ufw:
+        rule: allow
+        proto: tcp
+        src: 10.0.2.2/32
+        port: '22'
+        comment: Allow SSH from Ansible control node
+    - name: Allow SSH from Ansible control node
+      community.general.ufw:
+        rule: allow
+        proto: tcp
+        src:  192.168.56.2/32
+        port: '22'
+        comment: Allow SSH from Ansible control node
+    - name: Enable UFW
+      community.general.ufw
+        state: enabled
+    - name: Add ansible host public SSH keys to authorized keys
+      blockinfile: path=/home/vagrant/.ssh/authorized_keys block={{lookup('file', '/vagrant/id_rsa.pub')}} create=yes state=present
