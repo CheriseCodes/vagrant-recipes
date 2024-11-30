@@ -1,0 +1,79 @@
+# -*- mode: ruby -*-
+# vi:set ft=ruby sw=2 ts=2 sts=2:# Define the number of control plane (CONTROL_PLANE_NODE) and node (WORKER_NODE)
+# Source 1: https://holdennguyen.medium.com/bootstrapping-kubernetes-cluster-with-kubeadm-on-virtual-box-d251760f6be9
+# Source 2: https://github.com/holdennguyen/kubernetes-install-cluster-with-kubeadm
+# Source 3: https://github.com/bmuschko/cka-study-guide/tree/702a37f77c025b21dd2b045c5492ef3417d66818/app-a/ch07/troubleshooting-worker-node
+# Source 4: https://github.com/bmuschko/cka-study-guide/tree/702a37f77c025b21dd2b045c5492ef3417d66818/app-a/ch02/upgrade-version
+
+NUM_CONTROL_PLANE_NODE = 1
+NUM_WORKER_NODE = 2
+IP_NW = "192.168.56."
+CONTROL_PLANE_IP_START = 2 # starting at 2 to not conflict with router
+WORKER_IP_START = CONTROL_PLANE_IP_START + NUM_CONTROL_PLANE_NODE
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+
+# The most common configuration options are documented and commented below.
+# For a complete reference, please see the online documentation at
+# https://docs.vagrantup.com.
+# Every Vagrant development environment requires a box. You can search for
+# boxes at https://vagrantcloud.com/search.
+# Here are some key details about the "ubuntu/bionic64" Vagrant box:
+    # Operating System: Ubuntu 18.04 LTS (Bionic Beaver)
+        # Ubuntu 18.04 LTS will receive security updates and bug fixes 
+        # from Canonical, the company behind Ubuntu, until April 2023 
+        # for desktop and server versions, and until April 2028 for 
+        # server versions with Extended Security Maintenance (ESM) enabled.
+    # Architecture: x86_64 (64-bit)
+    # Disk Size: 10 GB
+    # RAM: 2 GB
+    # CPUs: 2
+    # Desktop Environment: None (headless)
+    # Provider: VirtualBox 
+config.vm.box = "ubuntu/focal64"
+
+# Disable automatic box update checking. If you disable this, then
+# boxes will only be checked for updates when the user runs
+# `vagrant box outdated`. This is not recommended.
+config.vm.box_check_update = false
+# View the documentation for the VirtualBox for more
+# information on available options.
+# https://developer.hashicorp.com/vagrant/docs/providers/virtualbox/configuration
+
+# Provision Control Plane
+(0..(NUM_CONTROL_PLANE_NODE-1)).each do |i|
+    config.vm.define "kube-control-plane-node#{i}" do |node|
+        node.vm.provider "virtualbox" do |vb|
+            vb.name = "kube-control-plane-node#{i}"
+            vb.memory = 2048
+            vb.cpus = 2
+        end
+        node.vm.hostname = "kube-control-plane-node#{i}"
+        node.vm.network :private_network, ip: IP_NW + "#{CONTROL_PLANE_IP_START + i}"
+        node.vm.provision "shell", path: "0-install-CRI.sh"
+        node.vm.provision "shell", path: "1-setup-kubeadm-kubelet-kubectl.sh"
+        node.vm.provision "shell", path: "2-control-plane-setup.sh", args: "192.168.56.#{CONTROL_PLANE_IP_START + i}"
+    end
+end
+
+# Provision Nodes
+(0..(NUM_WORKER_NODE-1)).each do |i|
+    config.vm.define "kube-worker-node#{i}" do |node|
+        node.vm.provider "virtualbox" do |vb|
+            vb.name = "kube-worker-node#{i}"
+            vb.memory = 2048
+            vb.cpus = 2
+        end
+        node.vm.hostname = "kube-worker-node#{i}"
+        node.vm.network :private_network, ip: IP_NW + "#{WORKER_IP_START + i}"
+        node.vm.provision "shell", path: "0-install-CRI.sh"
+        node.vm.provision "shell", path: "1-setup-kubeadm-kubelet-kubectl.sh" 
+        node.vm.provision "shell", path: "2-join.sh"
+        node.vm.provision "shell", path: "3-worker-setup.sh", args: "192.168.56.#{WORKER_IP_START + i}"
+    end
+end
+end
