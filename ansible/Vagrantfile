@@ -50,8 +50,9 @@ config.vm.box_check_update = false
         end
         node.vm.hostname = "anisble-node#{i}"
         node.vm.network :private_network, ip: IP_NW + "#{CONTROL_IP_START + i}"
-        node.vm.provision "shell", path: "provisioners/shell/install-ansible.sh"
-    end
+        #node.vm.provision "shell", path: "provisioners/shell/install-ansible.sh"
+        node.vm.provision "ansible", compatibility_mode: "2.0", playbook: "provisioners/ansible/install-ansible.yml"    
+end
 end
 
 # Provision Nodes
@@ -64,7 +65,8 @@ end
         end
         node.vm.hostname = "host-node#{i}"
         node.vm.network :private_network, ip: IP_NW + "#{TARGET_HOST_IP_START + i}"
-        node.vm.provision "shell", path: "provisioners/shell/configure-ssh.sh"
+        #node.vm.provision "shell", path: "provisioners/shell/configure-ssh.sh"
+        node.vm.provision "ansible", compatibility_mode: "2.0", playbook: "provisioners/ansible/configure-ssh.yml"
     end
 end
 end

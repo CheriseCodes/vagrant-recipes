@@ -4,3 +4,69 @@
   gather_facts: false
   become: true
   tasks:
+    - name: Update repositories cache and install software-properties-common
+      ansible.builtin.apt:
+        name: software-properties-common
+        state: present
+        update_cache: yes
+    - name: Add deadsnaakes repository
+      ansible.builtin.apt_repository:
+        repo: ppa:deadsnakes/ppa
+    - name: Install Python 3.12
+      ansible.builtin.apt:
+        name: python3.12
+        state: present
+    - name: Download Get-Pip script
+      get_url:
+        url: https://bootstrap.pypa.io/get-pip.py
+        validate_certs: false
+        dest: "/home/vagrant/get-pip.py"
+        mode: 0755
+    - name: Install pip
+      ansible.builtin.command:
+        argv:
+          - /usr/bin/python3.12
+          - /home/vagrant/get-pip.py
+    - name: Install Ansible
+      ansible.builtin.command:
+        argv:
+          - /usr/local/bin/pip3.12
+          - install
+          - ansible
+    - name: Add Ansible to PATH
+      ansible.builtin.copy:
+        dest: /etc/profile.d/custom-path.sh
+        content: 'PATH=$PATH:/home/vagrant/.local/bin/"'
+        mode: "0644"
+    - name: Create SSH key pair
+      shell: ssh-keygen -f /home/vagrant/.ssh/id_rsa -N ""
+      args:
+        creates: /home/vagrant/.ssh/id_rsa
+    - name: Set vagrant as the owner of the private SSH key
+      ansible.builtin.file:
+        path: /home/vagrant/.ssh/id_rsa 
+        owner: vagrant
+        group: vagrant
+    - name: Set vagrant as the owner of the public SSH key
+      ansible.builtin.file:
+        path: /home/vagrant/.ssh/id_rsa.pub
+        owner: vagrant
+        group: vagrant
+    - name: Copy public SSH key to the shared vagrant folder
+      copy:
+        src: /home/vagrant/.ssh/id_rsa.pub
+        remote_src: true
+        dest: /vagrant/id_rsa.pub
+    - name: Create sample Ansible inventory file
+      copy:
+        content: |
+          [db]
+          postgres ansible_host=192.168.56.3
+          [cache]
+          redis ansible_host=192.168.56.4
+        dest: /home/vagrant/inventory.ini
+    - name: Set vagrant as the owner of the inventory file
+      ansible.builtin.file:
+        path: /home/vagrant/inventory.ini
+        owner: vagrant
+        group: vagrant

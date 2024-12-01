@@ -29,7 +29,9 @@
         port: '22'
         comment: Allow SSH from Ansible control node
     - name: Enable UFW
-      community.general.ufw
+      community.general.ufw:
         state: enabled
     - name: Add ansible host public SSH keys to authorized keys
-      blockinfile: path=/home/vagrant/.ssh/authorized_keys block={{lookup('file', '/vagrant/id_rsa.pub')}} create=yes state=present
+      ansible.builtin.shell: cat /vagrant/id_rsa.pub >> /home/vagrant/.ssh/authorized_keys
+      args:
+        executable: /bin/bash
