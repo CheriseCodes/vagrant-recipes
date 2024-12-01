@@ -4,7 +4,6 @@ apt-get install software-properties-common -y
 add-apt-repository -y ppa:deadsnakes/ppa
 apt-get update -y
 apt-get install -y python3.12
-curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12
 sudo -u vagrant bash -c 'curl -sS https://bootstrap.pypa.io/get-pip.py | python3.12'
 sudo -u vagrant bash -c 'python3.12 -m pip install ansible'
 export PATH=$PATH:/home/vagrant/.local/bin/
